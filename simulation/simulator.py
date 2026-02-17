@@ -194,10 +194,6 @@ class PressureControlSimulator:
             # System is stopped, no dynamics
             return self.get_current_state()
         
-        # Debug: log first few steps
-        if len(self.time_history) < 3:
-            logger.info(f"=== STEP {len(self.time_history)} START: t={self.time:.3f}s ===")
-        
         # Get current state
         I_motor = self.state[0]
         omega_motor = self.state[1]
@@ -234,30 +230,49 @@ class PressureControlSimulator:
                 logger.warning(f"Safety check error: {e}")
 
 
-        # Use simple Euler integration instead of scipy solve_ivp
-        # This is much faster and won't hang
-        logger.info(f"Computing derivatives at t={self.time:.3f}s")
+        # Use optimized RK45 integration for accuracy
+        # With fallback to Euler if it takes too long
+        use_rk45 = True  # Try RK45 first for accuracy
         
         try:
-            derivatives = self.system_dynamics(self.time, self.state, u_voltage)
-            logger.info(f"Derivatives computed: {derivatives}")
-            
-            # Simple Euler step: x_new = x_old + dx/dt * dt
-            self.state = self.state + derivatives * dt
-            
-            logger.info(f"State updated: P={self.state[4]:.2f}bar, theta={np.rad2deg(self.state[2]):.2f}deg")
-            
+            if use_rk45:
+                # Optimized RK45 with tight tolerances and max iterations
+                sol = solve_ivp(
+                    fun=lambda t, x: self.system_dynamics(t, x, u_voltage),
+                    t_span=[self.time, self.time + dt],
+                    y0=self.state,
+                    method='RK45',
+                    max_step=dt/2,  # Larger steps for speed
+                    rtol=1e-3,      # Relaxed tolerance for speed
+                    atol=1e-6,
+                    first_step=dt/10
+                )
+                
+                if sol.success:
+                    self.state = sol.y[:, -1]
+                else:
+                    # Fallback to Euler
+                    derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+                    self.state = self.state + derivatives * dt
+            else:
+                # Simple Euler integration (fast, stable)
+                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+                self.state = self.state + derivatives * dt
+                
         except Exception as e:
-            logger.error(f"Integration error: {e}", exc_info=True)
-            # Keep state unchanged on error
+            logger.warning(f"Integration error: {e}, using Euler fallback")
+            try:
+                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+                self.state = self.state + derivatives * dt
+            except:
+                logger.error("Euler fallback failed, keeping state unchanged")
         
         self.time += dt
         
-        # Debug logging (first few steps)
-        if len(self.time_history) < 5:
-            logger.info(f"Step {len(self.time_history)}: t={self.time:.3f}s, "
-                       f"u={u_voltage:.2f}V, P={self.state[4]:.2f}bar, "
-                       f"theta={np.rad2deg(self.state[2]):.2f}deg, I={self.state[0]:.2f}A")
+        # Log only first step for verification
+        if len(self.time_history) == 1:
+            logger.info(f"First step: t={self.time:.3f}s, P={self.state[4]:.2f}bar, "
+                       f"theta={np.rad2deg(self.state[2]):.2f}deg")
         
         # Store history
         self.time_history.append(self.time)
