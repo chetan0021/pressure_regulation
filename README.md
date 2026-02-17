@@ -287,6 +287,185 @@ The system automatically computes:
 - Stability confirmation
 - Disturbance recovery time
 
+## Safety Architecture
+
+This system implements industry-standard safety monitoring suitable for aerospace/avionics applications.
+
+```mermaid
+graph TB
+    subgraph "Safety Monitoring Layer"
+        MOTOR_SAFE[Motor Safety<br/>Overcurrent, Stall, Thermal]
+        PRESS_SAFE[Pressure Safety<br/>Overpressure, Rapid Change]
+        VALVE_SAFE[Valve Safety<br/>Position Limits, Jam Detection]
+    end
+    
+    subgraph "Validation Layer"
+        SENSOR_VAL[Sensor Validation<br/>Range Check, Fallback]
+    end
+    
+    subgraph "Control Layer"
+        SAFETY_MGR[Safety Manager]
+        ESTOP[Emergency Stop Controller]
+    end
+    
+    subgraph "Physical System"
+        MOTOR[Motor]
+        VALVE[Valve]
+        PRESSURE[Pressure System]
+    end
+    
+    MOTOR --> MOTOR_SAFE
+    VALVE --> VALVE_SAFE
+    PRESSURE --> PRESS_SAFE
+    
+    MOTOR_SAFE --> SENSOR_VAL
+    VALVE_SAFE --> SENSOR_VAL
+    PRESS_SAFE --> SENSOR_VAL
+    
+    SENSOR_VAL --> SAFETY_MGR
+    SAFETY_MGR --> ESTOP
+    
+    ESTOP --> MOTOR
+    ESTOP --> VALVE
+    
+    style MOTOR_SAFE fill:#FFB6C1,stroke:#333,stroke-width:2px,color:#000
+    style PRESS_SAFE fill:#98FB98,stroke:#333,stroke-width:2px,color:#000
+    style VALVE_SAFE fill:#87CEEB,stroke:#333,stroke-width:2px,color:#000
+    style SENSOR_VAL fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    style SAFETY_MGR fill:#DDA0DD,stroke:#333,stroke-width:2px,color:#000
+    style ESTOP fill:#FF6B6B,stroke:#333,stroke-width:2px,color:#000
+```
+
+## Safety Considerations
+
+### Safety Monitoring Subsystems
+
+1. **Motor Safety Monitor**
+   - **Overcurrent Protection**: Triggers at >30A (instantaneous)
+   - **Stall Detection**: Triggers at >25A for >0.5s
+   - **Thermal Protection**: I²t monitoring with 60s time constant
+   - **Sensor Validation**: Rejects readings outside [-1A, 35A]
+
+2. **Pressure Safety Monitor**
+   - **Overpressure Protection**: Critical at >700 bar, warning at >650 bar
+   - **Underpressure Protection**: Triggers at <0 bar
+   - **Rapid Change Detection**: Triggers at >200 bar/s (potential rupture/leak)
+   - **Sensor Validation**: Rejects readings outside [-10 bar, 750 bar]
+
+3. **Valve Safety Monitor**
+   - **Position Limits**: Enforces 0° to 180° range
+   - **Velocity Limits**: Triggers at >90°/s
+   - **Jam Detection**: Detects commanded motion with no actual movement
+   - **Sensor Validation**: Rejects readings outside [-10°, 190°]
+
+4. **Emergency Stop Controller**
+   - **Immediate Shutdown**: Motor voltage → 0V in <0.5s
+   - **Valve Hold**: Maintains current position during stop
+   - **Manual Reset Required**: Operator intervention needed after safety fault
+   - **State Preservation**: Logs fault reason and system state
+
+### Sensor Validation
+
+All sensors implement validation with fallback behavior:
+
+| Sensor | Valid Range | Fallback Value | Failure Threshold |
+|--------|-------------|----------------|-------------------|
+| Pressure | -10 to 750 bar | 100 bar (safe mid-range) | 3 consecutive out-of-range |
+| Motor Current | -1 to 35 A | 0 A (motor off) | 3 consecutive out-of-range |
+| Valve Position | -10° to 190° | 90° (mid-position) | 3 consecutive out-of-range |
+
+**Fallback Strategy:**
+1. First out-of-range reading → Use last valid reading, log warning
+2. Second consecutive → Continue using last valid, increase warning level
+3. Third consecutive → Sensor declared failed, use configured fallback value
+
+## Fault Cases & Mitigation Strategies
+
+| Fault Type | Detection Method | Mitigation Strategy | Recovery |
+|------------|------------------|---------------------|----------|
+| **Motor Overcurrent** | Current >30A | Emergency stop, cut motor power | Manual reset after fault cleared |
+| **Motor Stall** | Current >25A for >0.5s | Emergency stop, prevent thermal damage | Manual reset, check mechanical jam |
+| **Motor Thermal Limit** | I²t accumulator >1.2× rated | Emergency stop, cooldown required | Automatic after thermal decay |
+| **Overpressure** | Pressure >700 bar | Emergency stop, valve to safe position | Manual reset, check pressure relief |
+| **Rapid Pressure Change** | dP/dt >200 bar/s | Emergency stop, potential rupture | Manual inspection required |
+| **Valve Position Limit** | Angle <0° or >180° | Emergency stop, mechanical stop engaged | Manual reset, check position sensor |
+| **Valve Jam** | Commanded motion but no movement | Emergency stop, mechanical fault | Manual inspection, clear obstruction |
+| **Sensor Failure** | 3 consecutive out-of-range | Use fallback value, log error | Sensor replacement, manual reset |
+
+## Logging
+
+The system implements structured logging with severity levels:
+
+- **DEBUG**: Detailed diagnostic information
+- **INFO**: Normal operation events (setpoint changes, mode transitions)
+- **WARN**: Abnormal conditions that don't require shutdown (approaching limits)
+- **ERROR**: Fault conditions requiring emergency stop
+
+**Log Files:**
+- `logs/pressure_control.log`: All events (rotating, 10MB max, 5 backups)
+- `logs/errors.log`: ERROR level and above only
+
+**Logged Events:**
+- Control saturation (PID output at limits)
+- Motor stall warnings
+- Sensor faults and fallback activation
+- Safety violations and emergency stops
+- System state transitions
+
+## Testing
+
+### Running Tests
+
+**Install test dependencies:**
+```bash
+pip install pytest pytest-cov pytest-mock
+```
+
+**Run all tests with coverage:**
+```bash
+pytest
+```
+
+**Run specific test categories:**
+```bash
+# Safety-critical tests only
+pytest -m safety
+
+# Unit tests only
+pytest -m unit
+
+# Integration tests only
+pytest -m integration
+```
+
+**Run specific test files:**
+```bash
+pytest tests/test_motor_safety.py -v
+pytest tests/test_sensor_validation.py -v
+pytest tests/test_safety_integration.py -v
+```
+
+**Generate coverage report:**
+```bash
+pytest --cov=. --cov-report=html
+# Open htmlcov/index.html in browser
+```
+
+### Test Structure
+
+```
+tests/
+├── conftest.py              # Test fixtures and configuration
+├── test_motor_safety.py     # Motor safety monitor tests
+├── test_sensor_validation.py # Sensor validation tests
+└── test_safety_integration.py # Safety manager integration tests
+```
+
+**Coverage Goals:**
+- Safety modules: >90% coverage
+- Validation modules: >85% coverage
+- Control modules: >80% coverage
+
 ## Technology Stack
 
 - **Language**: Python 3.8+

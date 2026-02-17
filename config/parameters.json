@@ -1,36 +1,98 @@
 {
     "motor": {
-        "V_supply": 36,
+        "comment": "DC Motor electrical and mechanical parameters",
+        "V_supply": 36.0,
+        "R": 1.2,
+        "L": 0.05,
         "Kt": 0.8,
         "Ke": 0.8,
-        "R": 1.2,
+        "J": 0.001,
+        "b": 0.0001,
         "gear_ratio": 40,
         "gear_efficiency": 0.85
     },
     "valve": {
-        "mass": 100,
+        "comment": "Rotary valve mechanical parameters",
+        "mass": 100.0,
         "radius": 0.35,
-        "static_friction_torque": 120,
-        "max_angle_deg": 180
+        "b": 5.0,
+        "T_static": 120.0,
+        "T_dynamic": 50.0,
+        "omega_stribeck": 0.1,
+        "min_angle_deg": 0.0,
+        "max_angle_deg": 180.0
     },
     "pressure": {
-        "tau": 0.8,
-        "max_pressure": 700
+        "comment": "Compressible fluid pressure dynamics parameters",
+        "beta": 2.2e9,
+        "V_base": 0.01,
+        "rho": 850.0,
+        "C_d": 0.7,
+        "A_valve_max": 0.001,
+        "P_supply": 800.0,
+        "P_tank": 10.0,
+        "tau_first_order": 0.8,
+        "max_pressure": 700.0
     },
     "pid": {
+        "comment": "PID controller parameters",
         "Kp": 1.0,
         "Ki": 0.1,
         "Kd": 0.05,
-        "default_setpoint": 350
+        "default_setpoint": 350.0
     },
     "simulation": {
+        "comment": "Simulation parameters",
         "duration": 10.0,
+        "dt_max": 0.001,
         "disturbance_time": 4.0,
-        "disturbance_magnitude": 50
+        "disturbance_magnitude": 50.0,
+        "use_compressible_model": true
     },
     "performance_requirements": {
+        "comment": "Control system performance requirements",
         "settling_time_max": 3.0,
         "overshoot_max_percent": 10.0,
         "steady_state_error_max_percent": 2.0
+    },
+    "physical_constants": {
+        "comment": "Physical constants and unit conversions",
+        "bar_to_pa": 100000.0,
+        "deg_to_rad": 0.017453292519943295,
+        "gravity": 9.81
+    },
+    "parameter_descriptions": {
+        "motor": {
+            "V_supply": "Nominal supply voltage [V]",
+            "R": "Armature resistance [Ohm]",
+            "L": "Armature inductance [H]",
+            "Kt": "Torque constant [Nm/A]",
+            "Ke": "Back-EMF constant [V/(rad/s)]",
+            "J": "Rotor inertia [kg·m²]",
+            "b": "Viscous damping coefficient [Nm·s/rad]",
+            "gear_ratio": "Gearbox reduction ratio (motor:load)",
+            "gear_efficiency": "Gearbox efficiency [0-1]"
+        },
+        "valve": {
+            "mass": "Valve disk mass [kg]",
+            "radius": "Valve disk radius [m]",
+            "b": "Viscous damping coefficient [Nm·s/rad]",
+            "T_static": "Static friction torque [Nm]",
+            "T_dynamic": "Dynamic friction coefficient [Nm·s/rad]",
+            "omega_stribeck": "Stribeck velocity [rad/s]",
+            "min_angle_deg": "Minimum valve angle [degrees]",
+            "max_angle_deg": "Maximum valve angle [degrees]"
+        },
+        "pressure": {
+            "beta": "Bulk modulus of fluid [Pa] (2.2e9 for hydraulic oil)",
+            "V_base": "Base system volume [m³]",
+            "rho": "Fluid density [kg/m³] (850 for hydraulic oil)",
+            "C_d": "Discharge coefficient [dimensionless, 0.6-0.8]",
+            "A_valve_max": "Maximum valve flow area [m²]",
+            "P_supply": "Supply pressure [bar]",
+            "P_tank": "Tank/return pressure [bar]",
+            "tau_first_order": "First-order time constant (fallback model) [s]",
+            "max_pressure": "Maximum safe pressure [bar]"
+        }
     }
 }

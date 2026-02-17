@@ -1,14 +1,19 @@
 """
-Models Package
+Physical System Models Package
 
-Contains all physical models for the pressure control system:
-- motor.py: DC motor electrical and mechanical dynamics
-- valve.py: Rotary valve mechanical model
-- pressure.py: Tube pressure dynamics
+High-fidelity physics-based models for aerospace-grade simulation:
+- DC Motor: Full electrical and mechanical state-space dynamics
+- Rotary Valve: Second-order servo with Stribeck friction model
+- Pressure Dynamics: Compressible fluid with bulk modulus effects
+
+All models are configurable via config/parameters.json
+
+Author: Industrial Pressure Control System
+Date: 2026-02-18
 """
 
 from .motor import DCMotor
 from .valve import RotaryValve
-from .pressure import PressureModel
+from .pressure import PressureDynamics
 
-__all__ = ['DCMotor', 'RotaryValve', 'PressureModel']
+__all__ = ['DCMotor', 'RotaryValve', 'PressureDynamics']

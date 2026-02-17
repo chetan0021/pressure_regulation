@@ -14,3 +14,8 @@ control>=0.9.0
 
 # GUI (Tkinter is included with Python standard library)
 # No additional installation needed for tkinter
+
+# Testing dependencies
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
