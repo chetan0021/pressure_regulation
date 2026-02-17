@@ -193,7 +193,11 @@ class PressureControlDashboard:
             self.is_running = True
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.NORMAL)
-            self.status_label.config(text="INITIALIZING...", foreground='orange')
+            
+            # Show computing status with progress bar
+            self.status_label.config(text="COMPUTING...", foreground='orange')
+            self.progress_label.config(text="Initializing simulation engine...")
+            self.progress_bar.start(10)  # Start animated progress bar
             
             # Force GUI update
             self.root.update()
@@ -202,6 +206,8 @@ class PressureControlDashboard:
             if self.simulator.time == 0.0:
                 setpoint = float(self.setpoint_var.get())
                 self.simulator.initialize(initial_pressure=0.0, initial_setpoint=setpoint)
+                self.progress_label.config(text="Computing high-fidelity physics...")
+                self.root.update()
             
             # Clear stop flag and start background thread
             self.stop_thread.clear()
@@ -212,9 +218,6 @@ class PressureControlDashboard:
                 daemon=True
             )
             self.sim_thread.start()
-            
-            # Update status
-            self.status_label.config(text="RUNNING", foreground='blue')
             
             # Start GUI update loop
             self.update_loop()
@@ -227,6 +230,8 @@ class PressureControlDashboard:
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
         self.status_label.config(text="STOPPED", foreground='orange')
+        self.progress_bar.stop()
+        self.progress_label.config(text="")
         logger.info("Simulation stopped")
     
     def reset_simulation(self):
@@ -281,20 +286,28 @@ class PressureControlDashboard:
                     self.update_displays()
                     self.update_plots()
                     
-                    # Update status
-                    if len(self.simulator.time_history) < 10:
+                    # Update status based on progress
+                    step_count = len(self.simulator.time_history)
+                    if step_count < 20:
+                        # Still computing initial steps
                         self.status_label.config(text="COMPUTING...", foreground='orange')
+                        self.progress_label.config(text=f"Step {step_count}/20 - High-fidelity integration...")
                     else:
+                        # Normal running
                         self.status_label.config(text="RUNNING", foreground='blue')
+                        self.progress_bar.stop()  # Stop animated progress bar
+                        self.progress_label.config(text=f"Simulation running - {step_count} steps completed")
                     
                     # Check for emergency stop
                     if state.get('emergency_stopped', False):
                         self.status_label.config(text="EMERGENCY STOP", foreground='red')
+                        self.progress_bar.stop()
                         self.stop_simulation()
                         return
                         
                 elif result_type == 'error':
                     logger.error(f"Simulation thread error: {data}")
+                    self.progress_bar.stop()
                     self.stop_simulation()
                     return
                     
