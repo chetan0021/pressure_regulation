@@ -234,36 +234,22 @@ class PressureControlSimulator:
                 logger.warning(f"Safety check error: {e}")
 
 
-        # Integrate using RK45 with error handling
+        # Use simple Euler integration instead of scipy solve_ivp
+        # This is much faster and won't hang
+        logger.info(f"Computing derivatives at t={self.time:.3f}s")
+        
         try:
-            sol = solve_ivp(
-                fun=lambda t, x: self.system_dynamics(t, x, u_voltage),
-                t_span=[self.time, self.time + dt],
-                y0=self.state,
-                method='RK45',
-                max_step=dt/5,
-                rtol=1e-6,
-                atol=1e-8
-            )
+            derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+            logger.info(f"Derivatives computed: {derivatives}")
             
-            # Check if integration succeeded
-            if not sol.success:
-                logger.warning(f"Integration failed: {sol.message}")
-                # Use simple Euler step as fallback
-                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
-                self.state = self.state + derivatives * dt
-            else:
-                # Update state
-                self.state = sol.y[:, -1]
-                
+            # Simple Euler step: x_new = x_old + dx/dt * dt
+            self.state = self.state + derivatives * dt
+            
+            logger.info(f"State updated: P={self.state[4]:.2f}bar, theta={np.rad2deg(self.state[2]):.2f}deg")
+            
         except Exception as e:
-            logger.error(f"Integration error: {e}")
-            # Use simple Euler step as fallback
-            try:
-                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
-                self.state = self.state + derivatives * dt
-            except:
-                logger.error("Fallback integration also failed, keeping state unchanged")
+            logger.error(f"Integration error: {e}", exc_info=True)
+            # Keep state unchanged on error
         
         self.time += dt
         
