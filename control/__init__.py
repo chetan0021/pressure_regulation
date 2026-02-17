@@ -1,8 +1,15 @@
 """
-Control Package
+Control package for industrial pressure regulation.
 
-Contains control algorithms for the pressure regulation system:
-- pid.py: PID controller implementation
+Implements industrial-grade PID control with:
+- Anti-windup (back-calculation method)
+- Derivative filtering
+- Output saturation handling
+- Feedforward compensation
+- Bumpless transfer
+
+Author: Industrial Pressure Control System
+Date: 2026-02-18
 """
 
 from .pid import PIDController

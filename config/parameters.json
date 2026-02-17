@@ -35,11 +35,17 @@
         "max_pressure": 700.0
     },
     "pid": {
-        "comment": "PID controller parameters",
+        "comment": "Industrial-grade PID controller parameters",
         "Kp": 1.0,
         "Ki": 0.1,
         "Kd": 0.05,
-        "default_setpoint": 350.0
+        "default_setpoint": 350.0,
+        "u_min": -36.0,
+        "u_max": 36.0,
+        "Kt": null,
+        "tau_d": 0.01,
+        "Kff": 0.0,
+        "setpoint_rate_limit": 50.0
     },
     "simulation": {
         "comment": "Simulation parameters",
@@ -93,6 +99,18 @@
             "P_tank": "Tank/return pressure [bar]",
             "tau_first_order": "First-order time constant (fallback model) [s]",
             "max_pressure": "Maximum safe pressure [bar]"
+        },
+        "pid": {
+            "Kp": "Proportional gain",
+            "Ki": "Integral gain",
+            "Kd": "Derivative gain",
+            "default_setpoint": "Default pressure setpoint [bar]",
+            "u_min": "Minimum control output [V]",
+            "u_max": "Maximum control output [V]",
+            "Kt": "Anti-windup gain (null = auto-calculate)",
+            "tau_d": "Derivative filter time constant [s]",
+            "Kff": "Feedforward gain",
+            "setpoint_rate_limit": "Maximum setpoint change rate [bar/s]"
         }
     }
 }
