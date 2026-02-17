@@ -1,0 +1,36 @@
+{
+    "motor": {
+        "V_supply": 36,
+        "Kt": 0.8,
+        "Ke": 0.8,
+        "R": 1.2,
+        "gear_ratio": 40,
+        "gear_efficiency": 0.85
+    },
+    "valve": {
+        "mass": 100,
+        "radius": 0.35,
+        "static_friction_torque": 120,
+        "max_angle_deg": 180
+    },
+    "pressure": {
+        "tau": 0.8,
+        "max_pressure": 700
+    },
+    "pid": {
+        "Kp": 1.0,
+        "Ki": 0.1,
+        "Kd": 0.05,
+        "default_setpoint": 350
+    },
+    "simulation": {
+        "duration": 10.0,
+        "disturbance_time": 4.0,
+        "disturbance_magnitude": 50
+    },
+    "performance_requirements": {
+        "settling_time_max": 3.0,
+        "overshoot_max_percent": 10.0,
+        "steady_state_error_max_percent": 2.0
+    }
+}
