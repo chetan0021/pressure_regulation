@@ -8,5 +8,6 @@ Date: 2026-02-18
 """
 
 from .simulator import PressureControlSimulator
+from .fault_simulator import FaultSimulator, SimulationMode
 
-__all__ = ['PressureControlSimulator']
+__all__ = ['PressureControlSimulator', 'FaultSimulator', 'SimulationMode']

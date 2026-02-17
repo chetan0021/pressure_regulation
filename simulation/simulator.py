@@ -37,7 +37,7 @@ class PressureControlSimulator:
     """
     
     def __init__(self, motor, valve, pressure_model, controller, 
-                 safety_manager=None, sensor_validators=None):
+                 safety_manager=None, sensor_validators=None, fault_simulator=None):
         """
         Initialize simulator with all system components.
         
@@ -48,6 +48,7 @@ class PressureControlSimulator:
             controller: PIDController instance
             safety_manager: SafetyManager instance (optional)
             sensor_validators: SystemSensorValidators instance (optional)
+            fault_simulator: FaultSimulator instance (optional)
         """
         self.motor = motor
         self.valve = valve
@@ -55,6 +56,7 @@ class PressureControlSimulator:
         self.controller = controller
         self.safety_manager = safety_manager
         self.sensor_validators = sensor_validators
+        self.fault_simulator = fault_simulator
         
         # Simulation state
         self.time = 0.0
@@ -72,7 +74,8 @@ class PressureControlSimulator:
         self.disturbance_time = None
         self.disturbance_magnitude = 0.0
         
-        logger.info("Simulator initialized with 6th-order nonlinear system")
+        mode_str = f" in {fault_simulator.mode.value.upper()} mode" if fault_simulator else ""
+        logger.info(f"Simulator initialized with 6th-order nonlinear system{mode_str}")
     
     def initialize(self, initial_pressure=0.0, initial_setpoint=350.0):
         """
@@ -144,6 +147,11 @@ class PressureControlSimulator:
             u_voltage, I_motor, omega_motor, T_load_at_motor
         )
         
+        # Apply motor stall fault if active
+        if self.fault_simulator and self.fault_simulator.is_motor_stalled():
+            dI_dt = 0.0
+            domega_motor_dt = 0.0
+        
         # --- Valve Dynamics ---
         # Motor torque output (after gearbox)
         T_motor_output = self.motor.get_output_torque(I_motor)
@@ -152,6 +160,13 @@ class PressureControlSimulator:
         dtheta_valve_dt, domega_valve_dt = self.valve.compute_derivatives(
             T_motor_output, theta_valve, omega_valve, pressure
         )
+        
+        # Apply valve stuck fault if active
+        if self.fault_simulator:
+            stuck_angle = self.fault_simulator.get_valve_override()
+            if stuck_angle is not None:
+                dtheta_valve_dt = 0.0
+                domega_valve_dt = 0.0
         
         # Apply hard stops
         if theta_valve <= self.valve.min_angle and omega_valve < 0:
@@ -165,6 +180,17 @@ class PressureControlSimulator:
         dP_dt = self.pressure_model.compute_derivative(
             theta_valve, self.valve.max_angle, pressure_disturbed, omega_valve
         )
+        
+        # Apply leak fault if active
+        if self.fault_simulator:
+            leak_flow = self.fault_simulator.get_leak_flow()
+            if leak_flow != 0.0:
+                # Convert leak flow to pressure rate change: dP/dt = (β/V) × Q_leak
+                beta = self.pressure_model.beta
+                V = self.pressure_model.V_base
+                bar_to_pa = self.pressure_model.bar_to_pa
+                dP_leak = (beta / V) * leak_flow / bar_to_pa
+                dP_dt += dP_leak
         
         # PID integral is managed by controller, not in state vector
         dintegral_dt = 0.0
@@ -289,7 +315,7 @@ class PressureControlSimulator:
         Returns:
             dict: Current state information
         """
-        return {
+        state_dict = {
             'time': self.time,
             'motor_current': self.state[0],
             'motor_speed': self.state[1],
@@ -301,6 +327,13 @@ class PressureControlSimulator:
             'control_voltage': self.control_history[-1] if self.control_history else 0.0,
             'emergency_stopped': self.emergency_stopped
         }
+        
+        # Add fault status if fault simulator is present
+        if self.fault_simulator:
+            fault_status = self.fault_simulator.get_fault_status()
+            state_dict['fault_status'] = fault_status
+        
+        return state_dict
     
     def set_disturbance(self, time, magnitude):
         """
