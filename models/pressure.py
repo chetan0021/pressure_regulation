@@ -210,7 +210,7 @@ class PressureDynamics:
         return dP_dt
     
     def compute_derivative(self, valve_angle, max_angle, pressure, 
-                          valve_velocity=0.0, use_compressible=True):
+                          valve_velocity=0.0, use_compressible=False):
         """
         Compute pressure derivative (main interface).
         
