@@ -170,8 +170,15 @@ class PressureControlSimulator:
         dintegral_dt = 0.0
         
         # Return derivatives
-        return np.array([dI_dt, domega_motor_dt, dtheta_valve_dt, 
+        derivatives = np.array([dI_dt, domega_motor_dt, dtheta_valve_dt, 
                         domega_valve_dt, dP_dt, dintegral_dt])
+        
+        # Check for NaN or Inf
+        if not np.all(np.isfinite(derivatives)):
+            logger.error(f"Non-finite derivatives detected: {derivatives}")
+            return np.zeros(6)
+        
+        return derivatives
     
     def step(self, dt):
         """
@@ -186,6 +193,10 @@ class PressureControlSimulator:
         if self.emergency_stopped:
             # System is stopped, no dynamics
             return self.get_current_state()
+        
+        # Debug: log first few steps
+        if len(self.time_history) < 3:
+            logger.info(f"=== STEP {len(self.time_history)} START: t={self.time:.3f}s ===")
         
         # Get current state
         I_motor = self.state[0]
@@ -222,18 +233,38 @@ class PressureControlSimulator:
             except Exception as e:
                 logger.warning(f"Safety check error: {e}")
 
+
+        # Integrate using RK45 with error handling
+        try:
+            sol = solve_ivp(
+                fun=lambda t, x: self.system_dynamics(t, x, u_voltage),
+                t_span=[self.time, self.time + dt],
+                y0=self.state,
+                method='RK45',
+                max_step=dt/5,
+                rtol=1e-6,
+                atol=1e-8
+            )
+            
+            # Check if integration succeeded
+            if not sol.success:
+                logger.warning(f"Integration failed: {sol.message}")
+                # Use simple Euler step as fallback
+                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+                self.state = self.state + derivatives * dt
+            else:
+                # Update state
+                self.state = sol.y[:, -1]
+                
+        except Exception as e:
+            logger.error(f"Integration error: {e}")
+            # Use simple Euler step as fallback
+            try:
+                derivatives = self.system_dynamics(self.time, self.state, u_voltage)
+                self.state = self.state + derivatives * dt
+            except:
+                logger.error("Fallback integration also failed, keeping state unchanged")
         
-        # Integrate using RK45
-        sol = solve_ivp(
-            fun=lambda t, x: self.system_dynamics(t, x, u_voltage),
-            t_span=[self.time, self.time + dt],
-            y0=self.state,
-            method='RK45',
-            max_step=dt/10
-        )
-        
-        # Update state
-        self.state = sol.y[:, -1]
         self.time += dt
         
         # Debug logging (first few steps)
