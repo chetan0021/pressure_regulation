@@ -196,12 +196,10 @@ class PressureControlSimulator:
         
         # Validate sensors
         if self.sensor_validators:
-            pressure_validated = self.sensor_validators.validate_all({
-                'pressure': pressure,
-                'motor_current': I_motor,
-                'valve_position': np.rad2deg(theta_valve)
-            })
-            pressure = pressure_validated['pressure']['validated_value']
+            validation_result = self.sensor_validators.validate_all(
+                pressure, I_motor, np.rad2deg(theta_valve)
+            )
+            pressure = validation_result['validated_values']['pressure']
         
         # Compute control signal
         u_voltage = self.controller.compute_control_signal(pressure, dt)
