@@ -40,19 +40,21 @@ class SafetyManager:
                  pressure_limits: Optional[PressureSafetyLimits] = None,
                  valve_limits: Optional[ValveSafetyLimits] = None,
                  estop_config: Optional[EmergencyStopConfig] = None):
+    def __init__(self, motor_monitor=None, pressure_monitor=None, 
+                 valve_monitor=None, estop=None):
         """
-        Initialize safety manager.
+        Initialize safety manager with all monitoring subsystems.
         
         Args:
-            motor_limits: Motor safety limits
-            pressure_limits: Pressure safety limits
-            valve_limits: Valve safety limits
-            estop_config: Emergency stop configuration
+            motor_monitor: MotorSafetyMonitor instance
+            pressure_monitor: PressureSafetyMonitor instance
+            valve_monitor: ValveSafetyMonitor instance
+            estop: EmergencyStopController instance
         """
-        self.motor_monitor = MotorSafetyMonitor(motor_limits)
-        self.pressure_monitor = PressureSafetyMonitor(pressure_limits)
-        self.valve_monitor = ValveSafetyMonitor(valve_limits)
-        self.estop = EmergencyStopController(estop_config)
+        self.motor_monitor = motor_monitor or MotorSafetyMonitor()
+        self.pressure_monitor = pressure_monitor or PressureSafetyMonitor()
+        self.valve_monitor = valve_monitor or ValveSafetyMonitor()
+        self.estop = estop or EmergencyStopController()
         
         self.fault_count: int = 0
         self.last_fault_message: str = ""
