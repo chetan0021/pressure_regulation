@@ -26,13 +26,13 @@ graph LR
     F --> G[PID Controller]
     G --> A
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#ffe1f5
-    style D fill:#e1ffe1
-    style E fill:#f5e1ff
-    style F fill:#ffe1e1
-    style G fill:#e1e1ff
+    style A fill:#e1f5ff,stroke:#333,stroke-width:2px,color:#000
+    style B fill:#fff4e1,stroke:#333,stroke-width:2px,color:#000
+    style C fill:#ffe1f5,stroke:#333,stroke-width:2px,color:#000
+    style D fill:#e1ffe1,stroke:#333,stroke-width:2px,color:#000
+    style E fill:#f5e1ff,stroke:#333,stroke-width:2px,color:#000
+    style F fill:#ffe1e1,stroke:#333,stroke-width:2px,color:#000
+    style G fill:#e1e1ff,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### Closed-Loop Control System
@@ -48,14 +48,14 @@ graph TB
     PRES --> SENS[Pressure Sensor]
     SENS --> SUM
     
-    style SP fill:#90EE90
-    style SUM fill:#FFB6C1
-    style PID fill:#87CEEB
-    style MOT fill:#FFD700
-    style GEAR fill:#DDA0DD
-    style VALVE fill:#F0E68C
-    style PRES fill:#98FB98
-    style SENS fill:#FFA07A
+    style SP fill:#90EE90,stroke:#333,stroke-width:2px,color:#000
+    style SUM fill:#FFB6C1,stroke:#333,stroke-width:2px,color:#000
+    style PID fill:#87CEEB,stroke:#333,stroke-width:2px,color:#000
+    style MOT fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    style GEAR fill:#DDA0DD,stroke:#333,stroke-width:2px,color:#000
+    style VALVE fill:#F0E68C,stroke:#333,stroke-width:2px,color:#000
+    style PRES fill:#98FB98,stroke:#333,stroke-width:2px,color:#000
+    style SENS fill:#FFA07A,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### 4th-Order State-Space Model
@@ -86,10 +86,10 @@ graph TD
     EQ3 --> X3
     EQ4 --> X4
     
-    style X1 fill:#FFE4B5
-    style X2 fill:#E0BBE4
-    style X3 fill:#FFDAB9
-    style X4 fill:#B0E0E6
+    style X1 fill:#FFE4B5,stroke:#333,stroke-width:2px,color:#000
+    style X2 fill:#E0BBE4,stroke:#333,stroke-width:2px,color:#000
+    style X3 fill:#FFDAB9,stroke:#333,stroke-width:2px,color:#000
+    style X4 fill:#B0E0E6,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### Physical System Components
@@ -124,10 +124,10 @@ graph TB
         C3[SS Error: < 2%]
     end
     
-    style M1 fill:#FFE4E1
-    style V1 fill:#E0FFE0
-    style P1 fill:#E0E0FF
-    style C1 fill:#FFFFE0
+    style M1 fill:#FFE4E1,stroke:#333,stroke-width:2px,color:#000
+    style V1 fill:#E0FFE0,stroke:#333,stroke-width:2px,color:#000
+    style P1 fill:#E0E0FF,stroke:#333,stroke-width:2px,color:#000
+    style C1 fill:#FFFFE0,stroke:#333,stroke-width:2px,color:#000
 ```
 
 
@@ -193,14 +193,14 @@ graph TB
     PRESSURE --> CONFIG
     SIM --> UTILS
     
-    style GUI fill:#87CEEB
-    style PID fill:#98FB98
-    style SIM fill:#FFD700
-    style MOTOR fill:#FFB6C1
-    style VALVE fill:#DDA0DD
-    style PRESSURE fill:#F0E68C
-    style CONFIG fill:#FFA07A
-    style UTILS fill:#E0BBE4
+    style GUI fill:#87CEEB,stroke:#333,stroke-width:2px,color:#000
+    style PID fill:#98FB98,stroke:#333,stroke-width:2px,color:#000
+    style SIM fill:#FFD700,stroke:#333,stroke-width:2px,color:#000
+    style MOTOR fill:#FFB6C1,stroke:#333,stroke-width:2px,color:#000
+    style VALVE fill:#DDA0DD,stroke:#333,stroke-width:2px,color:#000
+    style PRESSURE fill:#F0E68C,stroke:#333,stroke-width:2px,color:#000
+    style CONFIG fill:#FFA07A,stroke:#333,stroke-width:2px,color:#000
+    style UTILS fill:#E0BBE4,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ### Data Flow Architecture
