@@ -23,6 +23,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import numpy as np
 import logging
+import threading
+import queue
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +48,11 @@ class PressureControlDashboard:
         # GUI state
         self.is_running = False
         self.update_interval = 50  # ms
+        
+        # Threading for non-blocking simulation
+        self.sim_thread = None
+        self.result_queue = queue.Queue()
+        self.stop_thread = threading.Event()
         
         # Create all widgets
         self.create_widgets()
@@ -188,7 +195,7 @@ class PressureControlDashboard:
             self.stop_button.config(state=tk.NORMAL)
             self.status_label.config(text="INITIALIZING...", foreground='orange')
             
-            # Force GUI update to show "INITIALIZING" message
+            # Force GUI update
             self.root.update()
             
             # Initialize simulator if needed
@@ -196,16 +203,27 @@ class PressureControlDashboard:
                 setpoint = float(self.setpoint_var.get())
                 self.simulator.initialize(initial_pressure=0.0, initial_setpoint=setpoint)
             
-            # Update status to RUNNING
+            # Clear stop flag and start background thread
+            self.stop_thread.clear()
+            dt = self.update_interval / 1000.0
+            self.sim_thread = threading.Thread(
+                target=self.simulation_worker,
+                args=(dt,),
+                daemon=True
+            )
+            self.sim_thread.start()
+            
+            # Update status
             self.status_label.config(text="RUNNING", foreground='blue')
             
-            # Start update loop
+            # Start GUI update loop
             self.update_loop()
-            logger.info("Simulation started")
+            logger.info("Simulation started in background thread")
     
     def stop_simulation(self):
         """Stop the simulation."""
         self.is_running = False
+        self.stop_thread.set()  # Signal thread to stop
         self.start_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
         self.status_label.config(text="STOPPED", foreground='orange')
@@ -230,32 +248,57 @@ class PressureControlDashboard:
         except ValueError:
             logger.error("Invalid setpoint value")
     
+    def simulation_worker(self, dt):
+        """Background thread worker for simulation computation."""
+        while not self.stop_thread.is_set():
+            try:
+                # Perform heavy computation in background
+                state = self.simulator.step(dt)
+                
+                # Put result in queue for GUI thread
+                self.result_queue.put(('success', state))
+                
+            except Exception as e:
+                logger.error(f"Simulation error: {e}")
+                self.result_queue.put(('error', str(e)))
+                break
+    
     def update_loop(self):
-        """Main update loop for simulation and GUI."""
+        """Main update loop for GUI (runs in GUI thread)."""
         if self.is_running:
-            # Show computing status for first few steps (when RK45 might be slow)
-            if len(self.simulator.time_history) < 10:
-                self.status_label.config(text="COMPUTING...", foreground='orange')
-                self.root.update_idletasks()  # Update GUI immediately
+            # Check if we have results from simulation thread
+            try:
+                result_type, data = self.result_queue.get_nowait()
+                
+                if result_type == 'success':
+                    state = data
+                    
+                    # Update displays (fast, in GUI thread)
+                    self.update_displays()
+                    self.update_plots()
+                    
+                    # Update status
+                    if len(self.simulator.time_history) < 10:
+                        self.status_label.config(text="COMPUTING...", foreground='orange')
+                    else:
+                        self.status_label.config(text="RUNNING", foreground='blue')
+                    
+                    # Check for emergency stop
+                    if state.get('emergency_stopped', False):
+                        self.status_label.config(text="EMERGENCY STOP", foreground='red')
+                        self.stop_simulation()
+                        return
+                        
+                elif result_type == 'error':
+                    logger.error(f"Simulation thread error: {data}")
+                    self.stop_simulation()
+                    return
+                    
+            except queue.Empty:
+                # No result yet, keep waiting
+                pass
             
-            # Step simulation
-            dt = self.update_interval / 1000.0  # Convert ms to seconds
-            state = self.simulator.step(dt)
-            
-            # Restore RUNNING status
-            self.status_label.config(text="RUNNING", foreground='blue')
-            
-            # Update displays
-            self.update_displays()
-            self.update_plots()
-            
-            # Check for emergency stop
-            if state['emergency_stopped']:
-                self.status_label.config(text="EMERGENCY STOP", foreground='red')
-                self.stop_simulation()
-                return
-            
-            # Schedule next update
+            # Schedule next GUI update
             self.root.after(self.update_interval, self.update_loop)
     
     def update_displays(self):
