@@ -22,7 +22,7 @@ import numpy as np
 # Import system components
 from models import DCMotor, RotaryValve, PressureDynamics
 from control import PIDController
-from simulation import PressureControlSimulator
+from simulation import PressureControlSimulator, FaultSimulator, SimulationMode
 from gui import PressureControlDashboard
 from config import load_parameters
 from safety import SafetyManager, MotorSafetyMonitor, PressureSafetyMonitor, ValveSafetyMonitor, EmergencyStopController
@@ -137,6 +137,13 @@ def main():
             safety_manager = None
             sensor_validators = None
         
+        # --- Initialize Fault Simulator ---
+        # Configure simulation mode (change this to test different scenarios)
+        # Options: SimulationMode.NOMINAL, SimulationMode.DISTURBANCE, SimulationMode.FAULT
+        simulation_mode = SimulationMode.NOMINAL  # Change to FAULT to test fault injection
+        logger.info(f"Initializing fault simulator in {simulation_mode.value.upper()} mode...")
+        fault_simulator = FaultSimulator(mode=simulation_mode)
+        
         # --- Initialize Simulator ---
         logger.info("Initializing simulator...")
         simulator = PressureControlSimulator(
@@ -145,7 +152,8 @@ def main():
             pressure_model=pressure_model,
             controller=controller,
             safety_manager=safety_manager,
-            sensor_validators=sensor_validators
+            sensor_validators=sensor_validators,
+            fault_simulator=fault_simulator
         )
         
         # Configure disturbance
