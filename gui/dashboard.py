@@ -250,6 +250,7 @@ class PressureControlDashboard:
     
     def simulation_worker(self, dt):
         """Background thread worker for simulation computation."""
+        import time
         while not self.stop_thread.is_set():
             try:
                 # Perform heavy computation in background
@@ -257,6 +258,9 @@ class PressureControlDashboard:
                 
                 # Put result in queue for GUI thread
                 self.result_queue.put(('success', state))
+                
+                # Sleep to match GUI update rate (prevent queue overflow)
+                time.sleep(dt)  # Sleep for simulation timestep
                 
             except Exception as e:
                 logger.error(f"Simulation error: {e}")
