@@ -186,12 +186,18 @@ class PressureControlDashboard:
             self.is_running = True
             self.start_button.config(state=tk.DISABLED)
             self.stop_button.config(state=tk.NORMAL)
-            self.status_label.config(text="RUNNING", foreground='blue')
+            self.status_label.config(text="INITIALIZING...", foreground='orange')
+            
+            # Force GUI update to show "INITIALIZING" message
+            self.root.update()
             
             # Initialize simulator if needed
             if self.simulator.time == 0.0:
                 setpoint = float(self.setpoint_var.get())
                 self.simulator.initialize(initial_pressure=0.0, initial_setpoint=setpoint)
+            
+            # Update status to RUNNING
+            self.status_label.config(text="RUNNING", foreground='blue')
             
             # Start update loop
             self.update_loop()
@@ -227,9 +233,17 @@ class PressureControlDashboard:
     def update_loop(self):
         """Main update loop for simulation and GUI."""
         if self.is_running:
+            # Show computing status for first few steps (when RK45 might be slow)
+            if len(self.simulator.time_history) < 10:
+                self.status_label.config(text="COMPUTING...", foreground='orange')
+                self.root.update_idletasks()  # Update GUI immediately
+            
             # Step simulation
             dt = self.update_interval / 1000.0  # Convert ms to seconds
             state = self.simulator.step(dt)
+            
+            # Restore RUNNING status
+            self.status_label.config(text="RUNNING", foreground='blue')
             
             # Update displays
             self.update_displays()
