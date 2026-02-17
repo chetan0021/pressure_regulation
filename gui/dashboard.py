@@ -137,6 +137,12 @@ class PressureControlDashboard:
         ttk.Label(safety_frame, text="System Status:", font=('Arial', 10, 'bold')).grid(row=0, column=0, sticky=tk.W, pady=5)
         self.status_label = ttk.Label(safety_frame, text="READY", font=('Arial', 12), foreground='green')
         self.status_label.grid(row=0, column=1, sticky=tk.W, padx=10, pady=5)
+        
+        # Progress indicators
+        self.progress_bar = ttk.Progressbar(safety_frame, length=150, mode='indeterminate')
+        self.progress_bar.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=10, pady=5)
+        self.progress_label = ttk.Label(safety_frame, text="", font=('Arial', 8), foreground='gray')
+        self.progress_label.grid(row=2, column=0, columnspan=2, sticky=tk.W, padx=10)
     
     def create_plot_panel(self, parent):
         """Create matplotlib plot panel for live graphing."""
