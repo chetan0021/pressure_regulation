@@ -171,9 +171,10 @@ class PressureDynamics:
         
         # Add small leakage flow for pressure relief (realistic system behavior)
         # Leakage proportional to pressure difference from tank
-        P_diff_bar = pressure - self.P_tank
-        leakage_coefficient = 1e-6  # m³/(s·bar) - small leakage
-        Q_leakage = -leakage_coefficient * max(P_diff_bar, 0.0)  # Always drains
+        # Reduced coefficient to prevent excessive drainage
+        P_diff_bar = max(pressure - self.P_tank, 0.0)  # Only leak if above tank pressure
+        leakage_coefficient = 1e-7  # m³/(s·bar) - very small leakage (reduced 10x)
+        Q_leakage = -leakage_coefficient * P_diff_bar  # Always drains when P > P_tank
         
         Q_total = Q_net + Q_leakage
         
