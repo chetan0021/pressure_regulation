@@ -1,8 +1,10 @@
 """
-Simulation Package
+Simulation package for pressure control system.
 
-Contains simulation engine for the pressure control system:
-- simulator.py: Main system simulator using scipy.integrate.solve_ivp
+Implements high-fidelity simulation engine using scipy.integrate.
+
+Author: Industrial Pressure Control System
+Date: 2026-02-18
 """
 
 from .simulator import PressureControlSimulator

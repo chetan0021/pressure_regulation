@@ -1,8 +1,10 @@
 """
-GUI Package
+GUI package for pressure control system.
 
-Contains graphical user interface components:
-- dashboard.py: Main Tkinter-based dashboard
+Implements Tkinter-based dashboard with real-time visualization.
+
+Author: Industrial Pressure Control System
+Date: 2026-02-18
 """
 
 from .dashboard import PressureControlDashboard
