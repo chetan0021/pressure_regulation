@@ -238,6 +238,12 @@ class PressureControlSimulator:
         self.state = sol.y[:, -1]
         self.time += dt
         
+        # Debug logging (first few steps)
+        if len(self.time_history) < 5:
+            logger.info(f"Step {len(self.time_history)}: t={self.time:.3f}s, "
+                       f"u={u_voltage:.2f}V, P={self.state[4]:.2f}bar, "
+                       f"theta={np.rad2deg(self.state[2]):.2f}deg, I={self.state[0]:.2f}A")
+        
         # Store history
         self.time_history.append(self.time)
         self.state_history.append(self.state.copy())
