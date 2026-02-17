@@ -35,11 +35,6 @@ class SafetyManager:
     emergency response, and system protection.
     """
     
-    def __init__(self,
-                 motor_limits: Optional[MotorSafetyLimits] = None,
-                 pressure_limits: Optional[PressureSafetyLimits] = None,
-                 valve_limits: Optional[ValveSafetyLimits] = None,
-                 estop_config: Optional[EmergencyStopConfig] = None):
     def __init__(self, motor_monitor=None, pressure_monitor=None, 
                  valve_monitor=None, estop=None):
         """
@@ -60,6 +55,7 @@ class SafetyManager:
         self.last_fault_message: str = ""
         
         logger.info("Safety manager initialized with all monitoring subsystems")
+
     
     def check_all_safety(self, state: SystemState) -> Dict[str, Any]:
         """
