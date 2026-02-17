@@ -169,13 +169,21 @@ class PressureDynamics:
         # Net volumetric flow rate [m³/s]
         Q_net = self.compute_flow_rate(valve_angle, max_angle, pressure)
         
+        # Add small leakage flow for pressure relief (realistic system behavior)
+        # Leakage proportional to pressure difference from tank
+        P_diff_bar = pressure - self.P_tank
+        leakage_coefficient = 1e-6  # m³/(s·bar) - small leakage
+        Q_leakage = -leakage_coefficient * max(P_diff_bar, 0.0)  # Always drains
+        
+        Q_total = Q_net + Q_leakage
+        
         # Volume change rate (typically negligible for rigid systems)
         # For flexible volumes: dV/dt = f(valve_position, pressure)
         dV_dt = 0.0  # Assuming rigid system
         
         # Compressible fluid equation: dP/dt = (β/V) × (Q_net - dV/dt)
         # Convert result from Pa/s to bar/s
-        dP_dt_pa = (self.beta / self.V_base) * (Q_net - dV_dt)
+        dP_dt_pa = (self.beta / self.V_base) * (Q_total - dV_dt)
         dP_dt_bar = dP_dt_pa / self.bar_to_pa
         
         return dP_dt_bar
